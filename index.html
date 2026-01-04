@@ -161,7 +161,7 @@
       const app = document.getElementById('app');
       
       const baseFont = config.font_size || defaultConfig.font_size;
-      const fontFamily = config.font_family || defaultConfig.font_family;
+      const fontFamily = `'${config.font_family || defaultConfig.font_family}', system-ui, -apple-system, sans-serif`;
       const bgColor = config.background_color || defaultConfig.background_color;
       const surfaceColor = config.surface_color || defaultConfig.surface_color;
       const textColor = config.text_color || defaultConfig.text_color;
@@ -173,7 +173,7 @@
 
       app.style.backgroundColor = bgColor;
       app.style.color = textColor;
-      app.style.fontFamily = `${fontFamily}, system-ui, sans-serif`;
+      app.style.fontFamily = fontFamily;
       
       app.innerHTML = `
         <div style="max-width: 800px; margin: 0 auto; padding: 2rem 1rem;">
@@ -222,7 +222,7 @@
                   
                   <div>
                     <label for="electric" style="display: block; font-size: ${baseFont * 0.9}px; font-weight: 500; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
-                      ⚡ Thời gian chạy xe điện (phút)
+                      ⚡ Thời gian ch��y xe điện (phút)
                     </label>
                     <input type="number" id="electric" min="0" value="${todayRecord?.electric_vehicle_minutes || 0}"
                       style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid ${primaryColor}; background-color: ${bgColor}; color: ${textColor}; font-size: ${baseFont}px; font-family: ${fontFamily}, system-ui, sans-serif;">
@@ -381,7 +381,7 @@
               ${todayRecord.food_waste_bowls > 0 ? `
               <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${secondaryColor};">
                 <p style="font-size: ${baseFont}px; font-weight: 600; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">🍽️ Chỉ lấy đủ ăn, tránh lãng phí thức ăn</p>
-                <p style="font-size: ${baseFont * 0.85}px; opacity: 0.8; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">Tránh lãng phí <strong>${todayRecord.food_waste_bowls}</strong> chén cơm (<strong>${(todayRecord.food_waste_bowls * 150).toFixed(0)}g</strong>) và giảm khí metan</p>
+                <p style="font-size: ${baseFont * 0.85}px; opacity: 0.8; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">Tránh l��ng phí <strong>${todayRecord.food_waste_bowls}</strong> chén cơm (<strong>${(todayRecord.food_waste_bowls * 150).toFixed(0)}g</strong>) và giảm khí metan</p>
               </div>
               ` : ''}
               
@@ -496,5 +496,5 @@
 
     initApp();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b887be61256c7ba',t:'MTc2NzUwNjA5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b888647769dc7ba',t:'MTc2NzUwNjUyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
