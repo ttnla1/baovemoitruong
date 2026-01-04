@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="vi" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nhật Ký Xanh</title>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .animate-slide-in {
+      animation: slideIn 0.5s ease-out forwards;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+    
+    .animate-pulse-custom {
+      animation: pulse 2s ease-in-out infinite;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="h-full">
+  <div id="app" class="h-full w-full overflow-auto"></div>
+  <script>
+    const defaultConfig = {
+      background_color: "#0f172a",
+      surface_color: "#1e293b",
+      text_color: "#f1f5f9",
+      primary_action_color: "#10b981",
+      secondary_action_color: "#3b82f6",
+      font_family: "system-ui",
+      font_size: 16,
+      app_title: "🌱 Nhật Ký Xanh",
+      app_subtitle: "Theo dõi tác động môi trường của bạn",
+      impact_message: "Hôm nay bạn đã tác động đến môi trường",
+      warning_message: "⚠️ Nếu tiếp tục như vậy, môi trường sẽ ngày càng ô nhiễm!",
+      solutions_title: "💡 Giải pháp cho bạn"
+    };
+
+    let currentRecords = [];
+    
+    const dataHandler = {
+      onDataChanged(data) {
+        currentRecords = data;
+        renderApp();
+      }
+    };
+
+    async function initApp() {
+      const dataResult = await window.dataSdk.init(dataHandler);
+      if (!dataResult.isOk) {
+        console.error("Failed to initialize data SDK");
+        return;
+      }
+
+      if (window.elementSdk) {
+        window.elementSdk.init({
+          defaultConfig,
+          onConfigChange: async (config) => {
+            renderApp();
+          },
+          mapToCapabilities: (config) => ({
+            recolorables: [
+              {
+                get: () => config.background_color || defaultConfig.background_color,
+                set: (value) => {
+                  config.background_color = value;
+                  window.elementSdk.setConfig({ background_color: value });
+                }
+              },
+              {
+                get: () => config.surface_color || defaultConfig.surface_color,
+                set: (value) => {
+                  config.surface_color = value;
+                  window.elementSdk.setConfig({ surface_color: value });
+                }
+              },
+              {
+                get: () => config.text_color || defaultConfig.text_color,
+                set: (value) => {
+                  config.text_color = value;
+                  window.elementSdk.setConfig({ text_color: value });
+                }
+              },
+              {
+                get: () => config.primary_action_color || defaultConfig.primary_action_color,
+                set: (value) => {
+                  config.primary_action_color = value;
+                  window.elementSdk.setConfig({ primary_action_color: value });
+                }
+              },
+              {
+                get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+                set: (value) => {
+                  config.secondary_action_color = value;
+                  window.elementSdk.setConfig({ secondary_action_color: value });
+                }
+              }
+            ],
+            borderables: [],
+            fontEditable: {
+              get: () => config.font_family || defaultConfig.font_family,
+              set: (value) => {
+                config.font_family = value;
+                window.elementSdk.setConfig({ font_family: value });
+              }
+            },
+            fontSizeable: {
+              get: () => config.font_size || defaultConfig.font_size,
+              set: (value) => {
+                config.font_size = value;
+                window.elementSdk.setConfig({ font_size: value });
+              }
+            }
+          }),
+          mapToEditPanelValues: (config) => new Map([
+            ["app_title", config.app_title || defaultConfig.app_title],
+            ["app_subtitle", config.app_subtitle || defaultConfig.app_subtitle],
+            ["impact_message", config.impact_message || defaultConfig.impact_message],
+            ["warning_message", config.warning_message || defaultConfig.warning_message],
+            ["solutions_title", config.solutions_title || defaultConfig.solutions_title]
+          ])
+        });
+      }
+
+      renderApp();
+    }
+
+    function getConfig() {
+      if (window.elementSdk && window.elementSdk.config) {
+        return window.elementSdk.config;
+      }
+      return defaultConfig;
+    }
+
+    function renderApp() {
+      const config = getConfig();
+      const app = document.getElementById('app');
+      
+      const baseFont = config.font_size || defaultConfig.font_size;
+      const fontFamily = config.font_family || defaultConfig.font_family;
+      const bgColor = config.background_color || defaultConfig.background_color;
+      const surfaceColor = config.surface_color || defaultConfig.surface_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const primaryColor = config.primary_action_color || defaultConfig.primary_action_color;
+      const secondaryColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+      
+      const todayRecord = currentRecords.find(r => r.date === new Date().toISOString().split('T')[0]);
+      const totalImpact = calculateTotalImpact(todayRecord);
+
+      app.style.backgroundColor = bgColor;
+      app.style.color = textColor;
+      app.style.fontFamily = `${fontFamily}, system-ui, sans-serif`;
+      
+      app.innerHTML = `
+        <div style="max-width: 800px; margin: 0 auto; padding: 2rem 1rem;">
+          <!-- Header -->
+          <header style="text-align: center; margin-bottom: 2rem;">
+            <h1 style="font-size: ${baseFont * 2}px; font-weight: bold; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+              ${config.app_title || defaultConfig.app_title}
+            </h1>
+            <p style="font-size: ${baseFont * 1.1}px; opacity: 0.9; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+              ${config.app_subtitle || defaultConfig.app_subtitle}
+            </p>
+          </header>
+
+          <!-- Input Form -->
+          <section style="background-color: ${surfaceColor}; border-radius: 1rem; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
+            <h2 style="font-size: ${baseFont * 1.5}px; font-weight: bold; margin-bottom: 1.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+              📝 Nhập dữ liệu hôm nay
+            </h2>
+            
+            <form id="inputForm">
+              <div style="display: grid; gap: 1rem;">
+                <div>
+                  <label for="bottles" style="display: block; font-size: ${baseFont * 0.9}px; font-weight: 500; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                    🍶 Số chai nước nhựa đã vứt
+                  </label>
+                  <input type="number" id="bottles" min="0" value="${todayRecord?.plastic_bottles || 0}" 
+                    style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid ${primaryColor}; background-color: ${bgColor}; color: ${textColor}; font-size: ${baseFont}px; font-family: ${fontFamily}, system-ui, sans-serif;">
+                </div>
+                
+                <div>
+                  <label for="bags" style="display: block; font-size: ${baseFont * 0.9}px; font-weight: 500; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                    🛍️ Số túi ni lông đã dùng
+                  </label>
+                  <input type="number" id="bags" min="0" value="${todayRecord?.plastic_bags || 0}"
+                    style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid ${primaryColor}; background-color: ${bgColor}; color: ${textColor}; font-size: ${baseFont}px; font-family: ${fontFamily}, system-ui, sans-serif;">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                  <div>
+                    <label for="motorbike" style="display: block; font-size: ${baseFont * 0.9}px; font-weight: 500; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                      🏍️ Thời gian chạy xe máy (phút)
+                    </label>
+                    <input type="number" id="motorbike" min="0" value="${todayRecord?.motorbike_minutes || 0}"
+                      style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid ${primaryColor}; background-color: ${bgColor}; color: ${textColor}; font-size: ${baseFont}px; font-family: ${fontFamily}, system-ui, sans-serif;">
+                  </div>
+                  
+                  <div>
+                    <label for="electric" style="display: block; font-size: ${baseFont * 0.9}px; font-weight: 500; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                      ⚡ Thời gian chạy xe điện (phút)
+                    </label>
+                    <input type="number" id="electric" min="0" value="${todayRecord?.electric_vehicle_minutes || 0}"
+                      style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid ${primaryColor}; background-color: ${bgColor}; color: ${textColor}; font-size: ${baseFont}px; font-family: ${fontFamily}, system-ui, sans-serif;">
+                  </div>
+                </div>
+                
+                <div>
+                  <label for="electricity" style="display: block; font-size: ${baseFont * 0.9}px; font-weight: 500; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                    💡 Thời gian bật điện không cần thiết (giờ)
+                  </label>
+                  <input type="number" id="electricity" min="0" step="0.5" value="${todayRecord?.electricity_hours || 0}"
+                    style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid ${primaryColor}; background-color: ${bgColor}; color: ${textColor}; font-size: ${baseFont}px; font-family: ${fontFamily}, system-ui, sans-serif;">
+                </div>
+                
+                <div>
+                  <label for="foodwaste" style="display: block; font-size: ${baseFont * 0.9}px; font-weight: 500; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                    🍚 Lượng thức ăn thừa bỏ đi (chén cơm)
+                  </label>
+                  <input type="number" id="foodwaste" min="0" step="0.5" value="${todayRecord?.food_waste_bowls || 0}"
+                    style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid ${primaryColor}; background-color: ${bgColor}; color: ${textColor}; font-size: ${baseFont}px; font-family: ${fontFamily}, system-ui, sans-serif;">
+                </div>
+                
+                <div>
+                  <label for="paper" style="display: block; font-size: ${baseFont * 0.9}px; font-weight: 500; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                    📄 Số tờ giấy đã vứt
+                  </label>
+                  <input type="number" id="paper" min="0" value="${todayRecord?.paper_sheets || 0}"
+                    style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid ${primaryColor}; background-color: ${bgColor}; color: ${textColor}; font-size: ${baseFont}px; font-family: ${fontFamily}, system-ui, sans-serif;">
+                </div>
+              </div>
+              
+              <button type="submit" id="saveBtn"
+                style="width: 100%; margin-top: 1.5rem; padding: 1rem; background-color: ${primaryColor}; color: white; font-weight: bold; border-radius: 0.5rem; border: none; cursor: pointer; font-size: ${baseFont * 1.1}px; transition: opacity 0.2s; font-family: ${fontFamily}, system-ui, sans-serif;"
+                onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                💾 Lưu dữ liệu hôm nay
+              </button>
+            </form>
+          </section>
+
+          <!-- Impact Summary -->
+          ${todayRecord ? `
+          <section style="background-color: ${surfaceColor}; border-radius: 1rem; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);" class="animate-slide-in">
+            <h2 style="font-size: ${baseFont * 1.5}px; font-weight: bold; margin-bottom: 1rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+              📊 ${config.impact_message || defaultConfig.impact_message}
+            </h2>
+            
+            <div style="display: grid; gap: 1rem;">
+              ${todayRecord.plastic_bottles > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${primaryColor};">
+                <p style="font-size: ${baseFont}px; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                  🍶 <strong>${todayRecord.plastic_bottles}</strong> chai nhựa = <strong>${(todayRecord.plastic_bottles * 450).toFixed(0)}g</strong> rác nhựa khó phân hủy
+                </p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.plastic_bags > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${primaryColor};">
+                <p style="font-size: ${baseFont}px; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                  🛍️ <strong>${todayRecord.plastic_bags}</strong> túi ni lông = t��n tại <strong>${todayRecord.plastic_bags * 500}</strong> năm trong môi trường
+                </p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.motorbike_minutes > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${primaryColor};">
+                <p style="font-size: ${baseFont}px; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                  🏍️ <strong>${todayRecord.motorbike_minutes}</strong> phút chạy xe máy = <strong>${(todayRecord.motorbike_minutes * 15).toFixed(0)}g</strong> CO₂ thải ra
+                </p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.electric_vehicle_minutes > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${primaryColor};">
+                <p style="font-size: ${baseFont}px; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                  ⚡ <strong>${todayRecord.electric_vehicle_minutes}</strong> phút chạy xe điện = <strong>${(todayRecord.electric_vehicle_minutes * 2).toFixed(0)}g</strong> CO₂ thải ra (sạch hơn 87%!)
+                </p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.electricity_hours > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${primaryColor};">
+                <p style="font-size: ${baseFont}px; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                  💡 <strong>${todayRecord.electricity_hours}</strong> giờ điện lãng phí = <strong>${(todayRecord.electricity_hours * 0.5).toFixed(1)}kg</strong> CO₂ gián tiếp
+                </p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.food_waste_bowls > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${primaryColor};">
+                <p style="font-size: ${baseFont}px; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                  🍚 <strong>${todayRecord.food_waste_bowls}</strong> chén cơm thừa (<strong>${(todayRecord.food_waste_bowls * 150).toFixed(0)}g</strong>) = gây khí metan khi phân hủy
+                </p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.paper_sheets > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${primaryColor};">
+                <p style="font-size: ${baseFont}px; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                  📄 <strong>${todayRecord.paper_sheets}</strong> tờ giấy = <strong>${(todayRecord.paper_sheets * 0.02).toFixed(2)}</strong> cây bị chặt
+                </p>
+              </div>
+              ` : ''}
+            </div>
+            
+            <div style="margin-top: 1.5rem; padding: 1rem; background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2)); border-radius: 0.5rem; border: 2px solid #ef4444;" class="animate-pulse-custom">
+              <p style="font-size: ${baseFont * 1.1}px; font-weight: bold; text-align: center; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+                ${config.warning_message || defaultConfig.warning_message}
+              </p>
+            </div>
+          </section>
+          ` : ''}
+
+          <!-- Solutions -->
+          ${todayRecord ? `
+          <section style="background-color: ${surfaceColor}; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);" class="animate-slide-in">
+            <h2 style="font-size: ${baseFont * 1.5}px; font-weight: bold; margin-bottom: 1rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">
+              ${config.solutions_title || defaultConfig.solutions_title}
+            </h2>
+            
+            <div style="display: grid; gap: 1rem;">
+              ${todayRecord.plastic_bottles > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${secondaryColor};">
+                <p style="font-size: ${baseFont}px; font-weight: 600; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">🥤 Mang theo bình nước cá nhân</p>
+                <p style="font-size: ${baseFont * 0.85}px; opacity: 0.8; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">Giảm 100% rác chai nhựa mỗi ngày - Tiết kiệm được <strong>${todayRecord.plastic_bottles * 450}g</strong> rác nhựa!</p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.plastic_bags > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${secondaryColor};">
+                <p style="font-size: ${baseFont}px; font-weight: 600; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">🛒 Sử dụng túi vải tái sử dụng</p>
+                <p style="font-size: ${baseFont * 0.85}px; opacity: 0.8; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">Một túi vải có thể thay thế <strong>${todayRecord.plastic_bags}</strong> túi ni lông bạn đã dùng hôm nay</p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.motorbike_minutes > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${secondaryColor};">
+                <p style="font-size: ${baseFont}px; font-weight: 600; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">🚴 Chuyển sang xe điện hoặc đi xe đạp</p>
+                <p style="font-size: ${baseFont * 0.85}px; opacity: 0.8; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">Giảm được <strong>${(todayRecord.motorbike_minutes * 13).toFixed(0)}g CO₂</strong> nếu dùng xe điện, hoặc <strong>${(todayRecord.motorbike_minutes * 15).toFixed(0)}g</strong> nếu đi xe đạp!</p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.electric_vehicle_minutes > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${secondaryColor};">
+                <p style="font-size: ${baseFont}px; font-weight: 600; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">⚡ Tuyệt vời! Bạn đang dùng xe điện</p>
+                <p style="font-size: ${baseFont * 0.85}px; opacity: 0.8; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">Bạn đã giảm được <strong>${(todayRecord.electric_vehicle_minutes * 13).toFixed(0)}g CO₂</strong> so với xe máy! Tiếp tục duy trì nhé 🌱</p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.electricity_hours > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${secondaryColor};">
+                <p style="font-size: ${baseFont}px; font-weight: 600; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">💡 Tắt điện khi không sử dụng</p>
+                <p style="font-size: ${baseFont * 0.85}px; opacity: 0.8; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">Tiết kiệm <strong>${(todayRecord.electricity_hours * 0.5).toFixed(1)}kg CO₂</strong> và giảm hóa đơn điện</p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.food_waste_bowls > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${secondaryColor};">
+                <p style="font-size: ${baseFont}px; font-weight: 600; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">🍽️ Chỉ lấy đủ ăn, tránh lãng phí thức ăn</p>
+                <p style="font-size: ${baseFont * 0.85}px; opacity: 0.8; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">Tránh lãng phí <strong>${todayRecord.food_waste_bowls}</strong> chén cơm (<strong>${(todayRecord.food_waste_bowls * 150).toFixed(0)}g</strong>) và giảm khí metan</p>
+              </div>
+              ` : ''}
+              
+              ${todayRecord.paper_sheets > 0 ? `
+              <div style="padding: 1rem; background-color: ${bgColor}; border-radius: 0.5rem; border-left: 4px solid ${secondaryColor};">
+                <p style="font-size: ${baseFont}px; font-weight: 600; margin-bottom: 0.5rem; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">📱 Sử dụng tài liệu điện tử thay vì in giấy</p>
+                <p style="font-size: ${baseFont * 0.85}px; opacity: 0.8; color: ${textColor}; font-family: ${fontFamily}, system-ui, sans-serif;">Bảo vệ <strong>${(todayRecord.paper_sheets * 0.02).toFixed(2)}</strong> cây và giảm rác thải</p>
+              </div>
+              ` : ''}
+            </div>
+          </section>
+          ` : ''}
+        </div>
+      `;
+
+      // Attach form handler
+      const form = document.getElementById('inputForm');
+      form.addEventListener('submit', handleFormSubmit);
+    }
+
+    function calculateTotalImpact(record) {
+      if (!record) return 0;
+      return (record.plastic_bottles || 0) + 
+             (record.plastic_bags || 0) + 
+             (record.motorbike_minutes || 0) / 10 +
+             (record.electric_vehicle_minutes || 0) / 50 +
+             (record.electricity_hours || 0) * 2 +
+             (record.food_waste_bowls || 0) * 1.5 +
+             (record.paper_sheets || 0);
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      
+      if (currentRecords.length >= 999) {
+        showMessage("Đã đạt giới h���n 999 bản ghi. Vui lòng xóa một số bản ghi cũ trước.", "error");
+        return;
+      }
+
+      const saveBtn = document.getElementById('saveBtn');
+      const originalText = saveBtn.textContent;
+      saveBtn.disabled = true;
+      saveBtn.textContent = "⏳ Đang lưu...";
+      saveBtn.style.opacity = "0.6";
+
+      const today = new Date().toISOString().split('T')[0];
+      const existingRecord = currentRecords.find(r => r.date === today);
+
+      const data = {
+        date: today,
+        plastic_bottles: parseInt(document.getElementById('bottles').value) || 0,
+        plastic_bags: parseInt(document.getElementById('bags').value) || 0,
+        motorbike_minutes: parseInt(document.getElementById('motorbike').value) || 0,
+        electric_vehicle_minutes: parseInt(document.getElementById('electric').value) || 0,
+        electricity_hours: parseFloat(document.getElementById('electricity').value) || 0,
+        food_waste_bowls: parseFloat(document.getElementById('foodwaste').value) || 0,
+        paper_sheets: parseInt(document.getElementById('paper').value) || 0
+      };
+
+      let result;
+      if (existingRecord) {
+        result = await window.dataSdk.update({
+          ...data,
+          __backendId: existingRecord.__backendId
+        });
+      } else {
+        result = await window.dataSdk.create(data);
+      }
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = originalText;
+      saveBtn.style.opacity = "1";
+
+      if (result.isOk) {
+        showMessage("✅ Đã lưu dữ liệu thành công!", "success");
+      } else {
+        showMessage("❌ Không thể lưu dữ liệu. Vui lòng thử lại.", "error");
+      }
+    }
+
+    function showMessage(message, type) {
+      const config = getConfig();
+      const baseFont = config.font_size || defaultConfig.font_size;
+      const fontFamily = config.font_family || defaultConfig.font_family;
+      const primaryColor = config.primary_action_color || defaultConfig.primary_action_color;
+      
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        background-color: ${type === 'success' ? primaryColor : '#ef4444'};
+        color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        font-size: ${baseFont}px;
+        font-family: ${fontFamily}, system-ui, sans-serif;
+        animation: slideIn 0.3s ease-out;
+      `;
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    initApp();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b887be61256c7ba',t:'MTc2NzUwNjA5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
